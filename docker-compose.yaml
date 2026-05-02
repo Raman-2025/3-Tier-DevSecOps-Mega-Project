@@ -1,1 +1,63 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Gurleen
+      MYSQL_DATABASE: crud_app
+    restart: always
+    networks:
+      - threetier
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pGurleen" ]
+      interval: 10s
+      retries: 5
+      start_period: 60s
+      timeout: 5s
+
+  frontend:
+    build:
+      context: ./client
+    container_name: frontend-cont
+    ports:
+      - "3000:80"
+    networks:
+      - threetier
+    restart: always
+    depends_on :
+      - backend-svc
+
+  backend-svc:
+    build:
+      context: ./api
+    container_name: backend_cont
+    ports:
+      - "5000:5000"
+    networks:
+      - threetier
+    depends_on:
+      mysql:
+        condition: service_healthy   
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: Gurleen
+      DB_NAME: crud_app
+      JWTSECRETS: devopsShackSuperSecretKey
+
+networks:
+  threetier:
+
+volumes:
+  mysql-data: 
+    
+
+
+
+
 
