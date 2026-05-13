@@ -4,24 +4,28 @@ on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
-    branches: [main]
 
 jobs:
   deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+
     steps:
-      - uses: appleboy/ssh-action@v1
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             if [ ! -d ~/3-Tier-DevSecOps-Mega-Project ]; then
-              git clone ${{ github.server_url }}/${{ github.repository }}.git ~/3-Tier-DevSecOps-Mega-Project            fi
+              git clone ${{ github.server_url }}/${{ github.repository }}.git ~/3-Tier-DevSecOps-Mega-Project
             fi
+
             cd ~/3-Tier-DevSecOps-Mega-Project
             git pull origin main
+
             docker compose pull
             docker compose up -d
+
             docker image prune -f
