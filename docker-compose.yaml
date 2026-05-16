@@ -1,63 +1,60 @@
 services:
-  mysql:
-    image: mysql:8
+  db:
+    image: mysql:latest
     container_name: mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: Gurleen
-      MYSQL_DATABASE: crud_app
-    restart: always
     networks:
-      - threetier
+      - network
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "3306:3306"
-    volumes:
-      - ./mysql-data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always    
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: crud_app
+      MYSQL_USER: user
+      MYSQL_PASSWORD: pass   
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pGurleen" ]
-      interval: 10s
-      retries: 5
-      start_period: 60s
+      test: ["CMD", "mysqladmin","ping","-h","localhost","-uuser","-ppass"]
+      interval: 30s
       timeout: 5s
+      retries: 5
+      start_period: 30s    
 
-  frontend:
-    build:
-      context: ./client
-    container_name: frontend-cont
-    ports:
-      - "3000:80"
-    networks:
-      - threetier
-    restart: always
-    depends_on :
-      - backend-svc
-
-  backend-svc:
+  backend:  
     build:
       context: ./api
     container_name: backend_cont
+    networks:
+      - network
     ports:
       - "5000:5000"
-    networks:
-      - threetier
+    restart: unless-stopped
     depends_on:
-      mysql:
-        condition: service_healthy   
+       db:
+         condition: service_healthy
     environment:
       DB_HOST: mysql
-      DB_USER: root
-      DB_PASSWORD: Gurleen
+      DB_USER: user
+      DB_PASSWORD: pass
       DB_NAME: crud_app
-      JWTSECRETS: devopsShackSuperSecretKey
+      JWT_SECRET: devopsShackSuperSecrettKey
+
+  frontend: 
+    build:
+      context: ./client
+    container_name: frontend_cont
+    networks: 
+       - network
+    ports:
+       - "80:80"
+    restart: unless-stopped
+    depends_on:
+       - backend     
 
 networks:
-  threetier:
+  network:
 
 volumes:
-  mysql-data: 
-    
-
-
-
-
-
+  mysql-data:  
