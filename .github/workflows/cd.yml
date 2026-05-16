@@ -1,7 +1,7 @@
 name: CD
 on:
   workflow_run:
-    workflows: ['ci']
+    workflows: ['CI']
     types: [completed]
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
 
    steps:
      - name: deploy to EC2 via SSH  
-       uses: appleboy/ssh-action@v7
+       uses: appleboy/ssh-action@v1
        with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
