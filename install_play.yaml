@@ -1,0 +1,82 @@
+- name: installation packages
+  hosts: servers
+  become: yes
+
+  vars:
+    packages_name:
+      - docker.io
+      - docker-compose-v2
+      - fontconfig
+      - openjdk-21-jre 
+
+  tasks:
+    - name: update system
+      apt:
+        update_cache: yes
+
+    - name: packages install
+      apt:
+        name: "{{ packages_name }}"
+        state: present
+        update_cache: yes
+
+    - name: add user to grp
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: restarted and enabled
+      service:
+        name: docker
+        state: restarted
+        enabled: yes
+
+    - name: check
+      command: docker ps -a
+      register: docker_output
+    - name: print output
+      debug:
+        msg: "{{ docker_output }}"
+
+    - name: create keyrings dir
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'  
+
+    - name: download gpg key
+      get_url:
+        url:  https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+        dest: /etc/apt/keyrings/jenkins-keyring.asc  
+        mode: '0644'  
+
+    - name: add jenkins repo
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
+        state: present
+        filename: jenkins  
+
+    - name: install jenkins
+      apt:
+        name: jenkins
+        state: present
+        update_cache: yes
+    - name: add jenkins user to grp
+      user:
+        name: jenkins
+        groups: docker  
+        append: yes  
+
+    - name: restarted and enabled jenkins
+      service:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: check or verify
+      command: jenkins --version
+      register: jenkins_output 
+    - name: print output
+      debug:
+        var: jenkins_output.stdout
